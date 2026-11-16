@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+data/cofre.db
+data/fotos/
+data/evidencias/
+data/relatorios/
+.pytest_cache/
+data/config_usuario.json

@@ -1,0 +1,6 @@
+opencv-contrib-python>=4.10
+numpy>=1.26
+PySide6-Essentials>=6.10
+customtkinter>=5.2
+pillow>=10
+pytest>=8
