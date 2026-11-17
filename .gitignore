@@ -7,3 +7,4 @@ data/evidencias/
 data/relatorios/
 .pytest_cache/
 data/config_usuario.json
+data/demo/
