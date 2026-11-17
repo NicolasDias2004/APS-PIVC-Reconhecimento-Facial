@@ -25,7 +25,10 @@ ApplicationWindow {
         { id: "usuarios", texto: "Usuários", icone: "usuarios" },
         { id: "acessos", texto: "Auditoria de acessos", icone: "acessos" },
         { id: "avaliacao", texto: "Avaliação e demo", icone: "avaliacao" },
-        { id: "config", texto: "Configurações", icone: "config" }
+        { id: "config", texto: "Configurações", icone: "config" },
+        { id: "painel", texto: "Painel de segurança", icone: "painel", grupo: "Análise" },
+        { id: "laboratorio", texto: "Laboratório PIVC", icone: "laboratorio" },
+        { id: "resultados", texto: "Resultados", icone: "resultados" }
     ]
     function indicePagina(id) {
         for (var i = 0; i < paginas.length; ++i) if (paginas[i].id === id) return i
@@ -77,8 +80,14 @@ ApplicationWindow {
                         atalho: "⌘" + (index + 1)
                         ativo: app.pagina === modelData.id
                         onClicked: app.navegar(modelData.id)
+                        Layout.topMargin: modelData.grupo ? 30 : 0
+                        Text { visible: !!modelData.grupo; text: modelData.grupo || ""; x: 8; y: -22
+                               color: Theme.texto3; font.pixelSize: Theme.tLegenda; font.weight: Font.DemiBold }
                     }
                 }
+                Botao { Layout.fillWidth: true; Layout.topMargin: 14; variante: "fantasma"; compacto: true
+                        icone: "porta"; text: "Modo porta"; dica: "Terminal em tela cheia (⌘⇧F)"
+                        enabled: !app.sessao.ativa; onClicked: app.v2.entrarQuiosque() }
 
                 Item { Layout.fillHeight: true }
 
@@ -105,6 +114,7 @@ ApplicationWindow {
                                  : (app.cameraServico.estado === "abrindo" ? Theme.aviso : Theme.texto3))
                         }
                         LinhaSistema { rotulo: "Banco"; valor: app.nomeBanco(); cor: Theme.texto3 }
+                        SeloDemo { Layout.fillWidth: true; compacto: true }
                     }
                 }
                 Text {
@@ -130,6 +140,9 @@ ApplicationWindow {
             Pagina { fonte: "AcessosPagina.qml"; id_: "acessos" }
             Pagina { fonte: "AvaliacaoPagina.qml"; id_: "avaliacao" }
             Pagina { fonte: "ConfigPagina.qml"; id_: "config" }
+            PaginaSegura { fonte: "PainelPagina.qml"; id_: "painel"; encerrando: janela.encerrando; erroVm: app.v2.erroDe("painel") }
+            PaginaSegura { fonte: "LaboratorioPagina.qml"; id_: "laboratorio"; encerrando: janela.encerrando; erroVm: app.v2.erroDe("laboratorio") }
+            PaginaSegura { fonte: "ResultadosPagina.qml"; id_: "resultados"; encerrando: janela.encerrando; erroVm: app.v2.erroDe("resultados") }
         }
     }
 
@@ -162,6 +175,27 @@ ApplicationWindow {
         active: !janela.encerrando
         sourceComponent: AreaLiberada {}
     }
+
+    // ---- v2: guarda de teclas das sobreposições, modo porta e cena de abertura
+    // Com uma sobreposição aberta (modo porta, paleta), cada tecla do terminal ganha um segundo Shortcut: a ativação
+    // fica ambígua e o onActivated de TerminalPagina.qml não dispara, mesmo com o foco fora da sobreposição.
+    Repeater {
+        model: ["1", "2", "3", "L", "D", "R"]
+        delegate: Item {
+            required property string modelData
+            Shortcut { sequences: [modelData]; enabled: app.v2.sobreposicaoAberta }
+        }
+    }
+    property bool cenaPronta: false
+    Connections { target: app.sessao; function onAtivaChanged() { if (app.sessao.ativa) janela.cenaPronta = true } }
+    Carregador { anchors.fill: parent; z: 40; sobreposicao: true; encerrando: janela.encerrando
+                 fonte: "Quiosque.qml"; ativo: app.v2.quiosqueUsado; erroVm: app.v2.erroDe("quiosque")
+                 onFalhou: { app.notificar("erro", "O modo porta não pôde ser carregado."); app.v2.sairQuiosque() } }
+    Carregador { anchors.fill: parent; z: 60; sobreposicao: true; encerrando: janela.encerrando
+                 fonte: "CenaAbertura.qml"; ativo: janela.cenaPronta; erroVm: "" }
+    Connections { target: app.v2; function onQuiosqueTelaCheiaChanged() { janela.visibility = app.v2.quiosqueTelaCheia ? Window.FullScreen : Window.Windowed } }
+    Shortcut { sequence: "Ctrl+Shift+F"; context: Qt.ApplicationShortcut
+               enabled: !app.sessao.ativa && !app.v2.sobreposicaoAberta; onActivated: app.v2.entrarQuiosque() }
 
     Notificacoes {
         anchors { right: parent.right; bottom: parent.bottom; margins: 20 }

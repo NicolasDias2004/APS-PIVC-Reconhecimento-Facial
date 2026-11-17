@@ -23,8 +23,9 @@ from .vm_config import ConfigVM
 from .vm_sessao import SessaoVM
 from .vm_terminal import TerminalVM
 from .vm_usuarios import UsuariosVM
+from .extensoes import PAGINAS_V2, Extensoes
 
-PAGINAS = ("terminal", "cadastro", "usuarios", "acessos", "avaliacao", "config")
+PAGINAS = ("terminal", "cadastro", "usuarios", "acessos", "avaliacao", "config") + PAGINAS_V2
 
 
 class Aplicacao(QObject):
@@ -57,6 +58,8 @@ class Aplicacao(QObject):
         self.sessao_vm.encerrada.connect(self._sessao_encerrada)
         self._vms = {"terminal": self.terminal_vm, "cadastro": self.cadastro_vm, "usuarios": self.usuarios_vm,
                      "acessos": self.acessos_vm, "avaliacao": self.avaliacao_vm, "config": self.config_vm}
+        self.extensoes = Extensoes(self, self)          # v2: ViewModels novos, com carregamento defensivo
+        self._vms.update(self.extensoes.paginas())
         self.config_vm.configAplicada.connect(self.terminal_vm.similaridadeMudou)   # o limiar exibido muda
         if carregar_modelos:
             self.carregar_modelos()
@@ -121,9 +124,11 @@ class Aplicacao(QObject):
             self.notificar("erro", f"Falha ao abrir a página: {e}")
 
     # ------------------------------------------------------------------ área liberada
+    @Slot()          # v2: slot declarado, para a Aplicacao usar o metaobjeto da classe (cache do QML)
     def _sessao_aberta(self) -> None:
         self.terminal_vm.pausar()        # câmera desligada enquanto a área está aberta
 
+    @Slot(str)
     def _sessao_encerrada(self, motivo: str) -> None:
         if self._pagina == "terminal":
             self.terminal_vm.retomar()
@@ -159,6 +164,11 @@ class Aplicacao(QObject):
         return self.sessao_vm
 
     sessao = Property(QObject, _get_sessao, constant=True)
+
+    def _get_v2(self):
+        return self.extensoes
+
+    v2 = Property(QObject, _get_v2, constant=True)
 
     def _get_camera(self):
         return self.camera

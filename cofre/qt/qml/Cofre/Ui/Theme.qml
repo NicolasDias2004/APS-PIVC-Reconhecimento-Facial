@@ -68,4 +68,22 @@ QtObject {
     readonly property int rapido: 120
     readonly property int medio: 200
     readonly property int lento: 320
+
+    // ---------------------------------------------------------------- v2 (só acréscimos)
+    readonly property string familiaMono: "Menlo"
+    readonly property int tCena: 38                       // frase do quiosque e nome na cena
+    readonly property color vidro: Qt.rgba(0.047, 0.055, 0.067, 0.86)   // cartão sobre vídeo
+    readonly property color hover: Qt.rgba(1, 1, 1, 0.035)
+    readonly property color luzTopo: Qt.rgba(1, 1, 1, 0.07)
+    readonly property color trilho: Qt.rgba(1, 1, 1, 0.16)             // trilho do anel
+    readonly property color neutroDado: "#8b97a6"                       // série neutra (impostor, contexto)
+    readonly property var coresSerie: ["#29a89b", "#4d8fe6", "#d75fa8", "#8a7cf0"]
+    readonly property var calor: ["#2a5a5e", "#266f6c", "#24877e", "#27a093", "#2fbfb0", "#9be9df"]
+    function corSerie(i) { return coresSerie[((i % coresSerie.length) + coresSerie.length) % coresSerie.length] }
+    function corCalor(f) { var k = Math.max(0, Math.min(calor.length - 1, Math.floor(f * calor.length))); return calor[k] }
+    readonly property int cena: 420                       // transição de cena
+    readonly property int cenaLonga: 1300                 // cena de abertura inteira
+    readonly property int colunaLateral: 320              // coluna de leitura das telas de análise
+    readonly property int linhaTabela: 40
+    readonly property int espacoBloco: 18
 }

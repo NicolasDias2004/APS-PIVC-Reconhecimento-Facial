@@ -13,6 +13,7 @@ from PySide6.QtQuickControls2 import QQuickStyle
 
 from .. import config
 from .aplicacao import Aplicacao
+from .graficos import Grafico
 from .video import VisorVideo
 
 DIR_QML = Path(__file__).resolve().parent / "qml"
@@ -25,6 +26,7 @@ def registrar_tipos() -> None:
     global _registrado
     if not _registrado:
         qmlRegisterType(VisorVideo, "Cofre.Nativo", 1, 0, "VisorVideo")
+        qmlRegisterType(Grafico, "Cofre.Nativo", 1, 0, "Grafico")
         _registrado = True
 
 
