@@ -6,11 +6,11 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 QML = RAIZ / "cofre" / "qt" / "qml" / "Cofre" / "Ui"
-ARQUIVOS = [RAIZ / "main.py", RAIZ / "app.py", RAIZ / "app_qt.py", *sorted((RAIZ / "cofre").glob("*.py")),
+ARQUIVOS = [RAIZ / "main.py", RAIZ / "app.py", RAIZ / "app_qt.py", RAIZ / "app_demo.py", *sorted((RAIZ / "cofre").glob("*.py")),
             *sorted((RAIZ / "cofre" / "interface").glob("*.py")), *sorted((RAIZ / "cofre" / "qt").glob("*.py")),
             *sorted(QML.glob("*.qml")), *sorted(QML.glob("*.js")), QML / "qmldir",
             *sorted((RAIZ / "tests").glob("*.py")),
-            RAIZ / "ferramentas" / "listar_codigo.py", RAIZ / "requirements.txt"]
+            RAIZ / "ferramentas" / "capturar_telas.py", RAIZ / "ferramentas" / "listar_codigo.py", RAIZ / "requirements.txt"]
 ARQUIVOS = [a for a in ARQUIVOS if a.exists()]
 DESTINO = RAIZ / "docs" / "LISTAGEM-CODIGO.md"
 LINGUAGEM = {".py": "python", ".qml": "qml", ".js": "javascript"}
