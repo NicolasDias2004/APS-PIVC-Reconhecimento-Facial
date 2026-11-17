@@ -54,6 +54,25 @@ Seis telas na barra lateral (atalhos ⌘1 a ⌘6):
 | Avaliação e demo | painel das 5 fases para uma imagem, autenticação por imagem e avaliação TAR/FAR/FRR/EER de uma pasta com curva |
 | Configurações | ajusta limiares, pose aceita no terminal, cadastro e câmera; cada campo diz quando passa a valer; salva em `data/config_usuario.json` |
 
+Na versão 2 a barra lateral passou a ter nove telas (⌘1 a ⌘9): às seis acima somam-se as do grupo
+**Análise**, que só leem o banco e nunca decidem acesso:
+
+| tela | abas | o que faz |
+|---|---|---|
+| Painel | Visão geral, Incidentes, Integridade | manchete, composição, fita por dia e espectro de similaridade do registro; postura dos controles e diagnóstico; bloqueios e tentativas em sequência; 13 regras conferidas no registro e selo SHA-256 |
+| Laboratório | Fases, Robustez, Explicabilidade | as cinco fases numa imagem (histogramas, CLAHE, matriz afim por Umeyama, LBP); degradações sintéticas, ponto de quebra e ablação; mapa de oclusão do descritor |
+| Resultados | Separação, Qualidade, Galeria | genuínos × impostores com N, AUC, EER, intervalo de Wilson e teto pela regra de três; curva erro × descarte; PCA da galeria, matriz de similaridade e saúde do cadastro |
+
+As telas ligam-se entre si por botões (por exemplo, "Ver a separação medida" na postura do Painel). O
+**modo porta** (⌘⇧F, botão na lateral) mostra o terminal em tela cheia, com o anel sobre o rosto e a cena de
+abertura quando a área liberada abre. Os nomes ficam ocultos por padrão nas telas novas.
+
+```bash
+python app_demo.py              # abre o aplicativo numa base de demonstração (data/demo/), sem tocar em data/cofre.db
+python app_demo.py --so-gerar   # só gera a base de demonstração
+python ferramentas/capturar_telas.py --saida /tmp/cofre-telas   # capturas de todas as telas, sem janela e sem webcam
+```
+
 No Terminal de acesso valem as mesmas teclas da versão OpenCV: `1` `2` `3`, `l`, `d` e `r`. Durante o
 bloqueio, área e prova de vida ficam travadas (botões e teclas).
 
@@ -98,6 +117,10 @@ a máquina de estados do terminal, o filtro de pose, a área liberada, os relat�
 telas da interface customtkinter e o aplicativo Qt Quick (`tests/test_qt_app.py`, sem janela visível). Usam as fotos em `tests/fixtures`
 e uma câmera falsa, sem webcam. A suíte leva cerca de 50 s.
 
+Com a versão 2 a suíte tem **463 testes** (os 96 acima e 367 da v2, em `tests/test_v2_*.py`): técnica nova,
+ViewModels e telas novas, princípios (anônimo por padrão, banco só em leitura, nenhum vetor exposto, verde só
+para concedido) e o conjunto congelado do núcleo. A suíte inteira leva cerca de 4 min (223 a 234 s medidos em 17/11/2026, com a máquina carregada).
+
 ## Estrutura
 
 ```
@@ -128,7 +151,13 @@ cofre/
     video.py                 VisorVideo: desenha o quadro e as caixas dos rostos (QQuickPaintedItem)
     vm_*.py                  um ViewModel por tela; o QML só lê propriedades e chama slots
     vm_sessao.py             área liberada: abre só pela decisão do backend, fecha por tempo ou botão
+    extensoes.py             v2: registro defensivo dos ViewModels novos (`app.v2`) e ligações entre telas
+    base_v2.py / trabalhos.py / graficos.py   v2: base dos ViewModels, trabalhos em thread, gráficos pintados
     qml/Cofre/Ui/            páginas, componentes, tema (Theme.qml) e ícones vetoriais
+  leitura_ro.py, analitica.py, incidentes.py, integridade.py, diagnostico.py          v2 · Painel
+  amostra_lab.py, fases_lab.py, degradacoes.py, robustez.py, explicabilidade.py     v2 · Laboratório
+  metricas.py, protocolos.py, qualidade.py, qualidade_erc.py, lote_sface.py, galeria_analise.py   v2 · Resultados
+  base_demo.py               v2: gerador da base de demonstração
   interface/                 interface anterior (customtkinter)
     app.py                   janela, barra lateral, troca de telas e ciclo de atualização
     camera.py                câmera em thread separada (captura + pipeline)
@@ -139,6 +168,8 @@ data/                        cofre.db, fotos/, evidencias/, relatorios/ (gerados
 tests/                       pytest + fotos de teste
 docs/                        material para a dissertação e listagem de código
 ferramentas/listar_codigo.py gera docs/LISTAGEM-CODIGO.md
+app_demo.py                  v2: abre o aplicativo na base de demonstração
+ferramentas/capturar_telas.py, ferramentas/portao_lote.py   v2: capturas sem janela e portão dos lotes
 ```
 
 Material para a dissertação: [docs/DETALHES-PARA-DOCUMENTACAO.md](docs/DETALHES-PARA-DOCUMENTACAO.md).

@@ -38,6 +38,10 @@ em customtkinter, continua no projeto), uma área liberada por nível depois da 
 | testes automatizados | 96, todos passando em ~100 s (43 do núcleo, 36 da interface anterior, 17 do aplicativo Qt) |
 | custo por frame | ~15-30 ms em notebook comum (frame reduzido a 640 px de largura) |
 
+A **versão 2** acrescenta uma camada de análise sobre esse núcleo, sem mudar nenhuma decisão de acesso:
+três telas novas (Painel, Laboratório e Resultados, com três abas cada), o modo porta e uma base de
+demonstração. Os detalhes, as contagens medidas e os testes estão na seção 11.
+
 ---
 
 ## 1. Objetivo e motivação (1-2 páginas)
@@ -472,6 +476,9 @@ Os testes da interface abrem a janela de verdade com uma câmera falsa que repet
     usuários cadastrados e algumas tentativas no log (terminal concedido, negado e bloqueado).
 11. Área liberada depois de um acesso concedido: uma captura por nível (área comum, sala dos
     diretores, cofre) e uma com o cadeado da área acima do nível da pessoa.
+12. Versão 2: `python ferramentas/capturar_telas.py --saida <pasta>` gera, sem janela e sem webcam, as
+    capturas das nove telas, das nove abas novas (e variantes), do modo porta e da cena de abertura, numa
+    base de demonstração temporária; `--tamanho 1080x680` repete no tamanho mínimo (seção 11).
 
 ---
 
@@ -537,3 +544,75 @@ computador que será usado, levar o venv pronto e um banco com histórico para o
 - JAIN, A. K.; ROSS, A.; NANDAKUMAR, K. *Introduction to Biometrics*. Springer, 2011.
 - BRASIL. Lei nº 13.709, de 14 de agosto de 2018 (LGPD).
 - Fotos de teste: retratos oficiais do governo dos EUA em domínio público (ver `tests/fixtures/FONTES.md`).
+
+---
+
+## 11. Versão 2: camada de análise
+
+### 11.1 O que entrou
+A v2 é uma camada que **lê** o núcleo e nunca o contrário: os módulos novos chamam as fases 1 a 5, o banco
+é aberto só em leitura (`cofre/leitura_ro.py`) e nenhum limiar, prova de vida, bloqueio ou nível muda.
+Nada de vetor de 128 dimensões, foto ou evidência aparece nas telas novas, e os nomes ficam ocultos por
+padrão (a chave "Mostrar nomes" vale só para a sessão).
+
+| tela (atalho) | aba | o que mostra | fase do PDI |
+|---|---|---|---|
+| Painel (⌘7) | Visão geral | manchete, composição dos resultados, fita por dia, espectro de similaridade com o limiar, postura dos controles e diagnóstico (tempo por fase, hash dos modelos) | 5 (e 1 a 4 no diagnóstico) |
+| | Incidentes | bloqueios, tentativas em sequência e desconhecidos insistentes, numa linha do tempo | 5 |
+| | Integridade | 13 regras conferidas no registro (todas "confere" na base de demonstração) e selo SHA-256 | 5 |
+| Laboratório (⌘8) | Fases | uma imagem pelas 5 fases: histograma original × global × CLAHE, matriz afim 2×3 por Umeyama, LBP, assinatura do descritor e comparação com a galeria só por botão | 1 a 5 |
+| | Robustez | 8 degradações sintéticas, ponto de quebra de cada uma e ablação (sem alinhamento, sem CLAHE) | 1 a 4 |
+| | Explicabilidade | sensibilidade do descritor por oclusão (mapa de calor sobre o rosto) | 4 |
+| Resultados (⌘9) | Separação | genuínos × impostores com N, AUC, EER, d′, intervalo de Wilson e teto pela regra de três; SFace contra LBP nos mesmos pares | 5 |
+| | Qualidade | medidas de qualidade do rosto contra o escore e curva erro × descarte | 2 a 5 |
+| | Galeria | PCA 2D da galeria, matriz de similaridade entre pessoas e saúde do cadastro (consultiva) | 4 e 5 |
+
+As telas ligam-se por botões ("Ver a separação medida", "Ver saúde do cadastro", "Testar a robustez desta
+imagem", "Ver onde o descritor olha", "Ver as curvas de oclusão", "Ver o que o descritor olha"). O **modo
+porta** (⌘⇧F) mostra o terminal em tela cheia com o anel sobre o rosto; o verde só aparece com a sessão
+aberta pelo backend, e na negação aparece só o motivo, sem nome. `python app_demo.py` abre o aplicativo numa
+base de demonstração em `data/demo/`, separada de `data/cofre.db`.
+
+Ficaram fora desta entrega, por decisão do dono: a paleta de comandos (⌘K), o roteiro de apresentação
+(⌘⇧A) e o relatório do painel em PDF.
+
+### 11.2 Contagens (medidas em 17/11/2026)
+| item | valor |
+|---|---|
+| módulos Python | 35 em `cofre/` e 38 em `cofre/qt/` (68 arquivos `.py` novos, contando testes e ferramentas) |
+| arquivos QML | 72 em `Cofre/Ui/` (41 novos: páginas, abas e o kit de componentes) |
+| linhas novas (sem testes) | ~9.900 de Python e ~4.950 de QML |
+| testes | 463 no total: os 96 anteriores e 367 da v2, em 26 arquivos `tests/test_v2_*.py` |
+| suíte inteira | 223 s e 234 s em duas execuções seguidas (máquina carregada); teto da especificação: 240 s |
+
+### 11.3 Técnicas novas, por área
+- **Estatística:** intervalo de Wilson para TAR e FAR; regra de três (teto de 3/N quando não há erro observado,
+  por isso "nenhum erro" nunca vira "0 %"); curva ROC, AUC, EER e d′.
+- **Álgebra linear:** PCA da galeria; matriz de similaridade; transformação afim estimada por Umeyama a
+  partir dos 5 pontos, que reproduz o alinhamento do SFace (diferença máxima de 1 nível de cinza nas fotos de teste).
+- **Segurança:** 13 regras de integridade do registro e selo SHA-256; leitura só por conexão somente leitura.
+- **IHC:** modo porta, estados vazio, carregando e erro em todas as abas, nomes ocultos por padrão.
+
+### 11.4 O que passou de limitação a medido
+Iluminação baixa, desfoque, ruído, rotação, oclusão dos olhos e da boca (óculos e máscara) agora têm curva
+e ponto de quebra na aba Robustez, com o selo "Sintético": são degradações simuladas numa imagem, não uma
+avaliação de campo. Continuam como limitação: a prova de vida por movimento é vulnerável a vídeo, o banco
+não é criptografado em repouso e os padrões de configuração são fixados quando o programa é carregado. Com
+as 4 fotos de teste a aba Separação fica em "amostra pequena"; para números que valham, rodar o protocolo
+"Pasta rotulada" com 5 a 10 fotos por integrante, tiradas em dias diferentes.
+
+### 11.5 Testes da v2 (`tests/test_v2_*.py`)
+Fundação e kit (`fundacao`, `graficos`, `tecnica_base`, `base_demo`, `capturas`), princípios e conjunto
+congelado (`principios`, `congelados`: 125 casos que conferem as regras transversais em todo código novo),
+um par técnica + tela por aba (`analitica`/`painel_geral`, `incidentes`/`integridade`/`painel_auditoria`,
+`fases_lab`/`lab_fases_qt`, `robustez`/`lab_robustez_qt`, `explicabilidade`/`lab_explicabilidade_qt`,
+`qualidade_erc`, `metricas`/`protocolos`/`res_separacao_qt`, `galeria_analise`/`res_galeria_qt`),
+`quiosque` e `integracao` (ligações entre telas; uma visita com o cálculo real de cada aba que não altera o
+banco nem os parâmetros, não mostra nome e não expõe vetor).
+
+### 11.6 Referências novas (conferir antes de usar)
+- UMEYAMA, S. Least-squares estimation of transformation parameters between two point patterns. *IEEE TPAMI*, v. 13, n. 4, 1991.
+- WILSON, E. B. Probable inference, the law of succession, and statistical inference. *Journal of the American Statistical Association*, v. 22, 1927.
+- ZEILER, M. D.; FERGUS, R. Visualizing and understanding convolutional networks. *ECCV*, 2014.
+- GROTHER, P.; TABASSI, E. Performance of biometric quality measures. *IEEE TPAMI*, v. 29, n. 4, 2007.
+- ISO/IEC 19795-1 (avaliação de desempenho biométrico) e ISO/IEC 29794-1 (qualidade de amostra biométrica).
